@@ -1,0 +1,99 @@
+<script>
+    $("#btnsave").click(function () {
+        //console.log("save button clicked");
+        output = "";
+        // stuid is used for the edit data
+        let sid= $("#stuid").val();
+        let nm= $("#nameid").val();
+        let em = $("#emailid").val();
+        let pw = $("#passwordid").val();
+        let csr = $("input[name=csrfmiddlewaretoken").val()
+        if (nm=="") {
+            $("#msg").text("Enter your name");
+            $("#msg").show();
+        }else if (em=="") {
+            $("#msg").text("Enter your email");
+            $("#msg").show();
+        }else if (pw=="") {
+            $("#msg").text("Enter your password");
+            $("#msg").show();
+        }else{
+            mydata = {stuid:sid,name:nm, email:em, password:pw, csrfmiddlewaretoken:csr};
+            $.ajax({
+                url : "{% url 'save' %}",
+                method : "POST",
+                data : mydata,
+                success:function(data){
+                    x = data.student_data;
+                    if (data.status=="save") {
+                        $("#msg").text("Form submitted successfully");
+                        $("#msg").show();
+                        for (let i = 0; i < x.length; i++) {
+                            output +="<tr><td>"+ x[i].id+"</td><td>"+ x[i].name +"</td><td>"+x[i].email+
+                                "</td><td>"+x[i].password+"</td><td> <input type='button' class ='btn btn-warning btn-sm btn-edit' value='Edit' data-sid="+x[i].id+" > <input type='button' class ='btn btn-danger btn-sm btn-del' value='Delete' data-sid="+x[i].id+" ></td>";
+                            }
+                        $("#tbody").html(output);
+                        // blank input field after edit data
+                        $("#stuid").val("");
+                        // reset after insert the data
+                        $("form")[0].reset();
+                    }
+                    if (data.status==0) {
+                        $("#msg").text("Unable to save data");
+                        $("#msg").show();
+                        $("#stuid").val("");
+                        $("form")[0].reset();
+                    }
+                }
+            });
+        };
+    });
+
+
+// delete Data
+$("tbody").on("click", ".btn-del", function() {
+    //console.log("delete button clicked")
+    let csr = $("input[name=csrfmiddlewaretoken").val();
+    let id = $(this).attr("data-sid");
+    mydata = {sid :id, csrfmiddlewaretoken:csr};
+    mythis = this;
+    $.ajax({
+        url : "{% url 'delete' %}",
+        method : "POST",
+        data:mydata,
+        success: function (data) {
+            if(data.status == 1){
+                $("#msg").text("Data deleted successfully");
+                $("#msg").show();
+                // deleted data  fedout. here "this" is not working because we are using this inside ajax.
+                //deleted raw object is not available inside the ajax so we are declare this outside of the ajax and used it.
+                $(mythis).closest("tr").fadeOut();
+            };
+            if(data.status == 0){
+                $("#msg").text("Unable to delete Data");
+                $("#msg").show();
+            };
+        },
+    });
+});
+
+// edit data 
+$("tbody").on("click", ".btn-edit", function() {
+    //console.log("edit data");
+    let csr = $("input[name=csrfmiddlewaretoken").val();
+    let id = $(this).attr("data-sid");
+    mydata = {sid:id, csrfmiddlewaretoken:csr };
+    $.ajax({
+        url : "{% url 'edit' %}",
+        method : "POST",
+        data :mydata,
+        success:function(data){
+            $("#stuid").val(data.id)
+            $("#nameid").val(data.name)
+            $("#emailid").val(data.email)
+            $("#passwordid").val(data.password)
+        },
+    });
+});
+
+</script>
